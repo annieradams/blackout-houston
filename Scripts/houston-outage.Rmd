@@ -60,24 +60,24 @@ library(tmap)
 
 ```{r}
 #load night light data
-h08v05_07 <- read_stars("data/VNP46A1/VNP46A1.A2021038.h08v05.001.2021039064328.tif") # load in data using stars
-h08v06_07 <- read_stars("data/VNP46A1/VNP46A1.A2021038.h08v06.001.2021039064329.tif")
-h08v05_16 <- read_stars("data/VNP46A1/VNP46A1.A2021047.h08v05.001.2021048091106.tif")
-h08v06_16 <- read_stars("data/VNP46A1/VNP46A1.A2021047.h08v06.001.2021048091105.tif")
+h08v05_07 <- read_stars("../data/VNP46A1/VNP46A1.A2021038.h08v05.001.2021039064328.tif") # load in data using stars
+h08v06_07 <- read_stars("../data/VNP46A1/VNP46A1.A2021038.h08v06.001.2021039064329.tif")
+h08v05_16 <- read_stars("../data/VNP46A1/VNP46A1.A2021047.h08v05.001.2021048091106.tif")
+h08v06_16 <- read_stars("../data/VNP46A1/VNP46A1.A2021047.h08v06.001.2021048091105.tif")
 
 
 #load in highway data using a query to select only highways
 query <- "SELECT * FROM gis_osm_roads_free_1 WHERE fclass='motorway'" # select only motorways
-highways <- st_read("data/gis_osm_roads_free_1.gpkg", query = query)  # read in data using query
+highways <- st_read("../data/gis_osm_roads_free_1.gpkg", query = query)  # read in data using query
 
 
 #load in building data using a query to select only houses 
 query <-  "SELECT * FROM gis_osm_buildings_a_free_1 WHERE type in ('residential', 'apartments', 'house', 'static_caravan', 'detached')" # query to select only housing related buidlings 
-buildings <- st_read("data/gis_osm_buildings_a_free_1.gpkg", query = query) # load in data using query
+buildings <- st_read("../data/gis_osm_buildings_a_free_1.gpkg", query = query) # load in data using query
 
 
 #load in socioeconomic data
-acs_geoms <- st_read("data/ACS_2019_5YR_TRACT_48_TEXAS.gdb", layer = "ACS_2019_5YR_TRACT_48_TEXAS") # read in tract layer with geometries
+acs_geoms <- st_read("../data/ACS_2019_5YR_TRACT_48_TEXAS.gdb", layer = "ACS_2019_5YR_TRACT_48_TEXAS") # read in tract layer with geometries
 
 ```
 
@@ -90,9 +90,6 @@ Let's first explore the effect the storm had on all of Houston in terms of outag
 
 night_lights_07 <- st_mosaic(h08v05_07,h08v06_07) # join together two tiles for each day
 night_lights_16 <-st_mosaic(h08v05_16,h08v06_16)
-
-
-
 
 ```
 
@@ -126,12 +123,12 @@ blackout_houston_3083 <- st_transform(blackout_houston, "EPSG: 3083") # change c
 
 
 tmap_mode("plot") 
-map = tm_shape(blackout_houston_3083) + tm_polygons() # plot blackout map 
+map = tm_shape(blackout_houston_3083) + tm_polygons() + tm_layout(title = "Blackout areas in Houston") # plot blackout map 
 object.size(map)
 map
 
 
-
+tmap_save(map, filename = "../Results/blackout_vector_houston.png")
 
 
 ```
@@ -195,7 +192,7 @@ We will now use the `acs` data to see if there is any relationship between black
 ```{r include=TRUE}
 
 acs_geoms <- st_transform(acs_geoms, crs = "EPSG:3038") # transform crs to 3083
-acs_income <- st_read("data/ACS_2019_5YR_TRACT_48_TEXAS.gdb", layer = "X19_INCOME") # read in income layer
+acs_income <- st_read("../data/ACS_2019_5YR_TRACT_48_TEXAS.gdb", layer = "X19_INCOME") # read in income layer
 
 median_income <- acs_income %>%  select( "B19013e1") # select median income field
 head(median_income) #make sure data frame has correct column
@@ -247,6 +244,7 @@ ggplot()+
   labs(title = "Houston Blackouts over median income in census tracts",
               subtitle = "Blackout difference from Febuary 7th, 2021 to Febuary 16th, 2021",
               caption = "Data source: Geofabrik,U.S. Census Bureau's American Community Survey,\n Visible Infrared Imaging Radiometer Suite ")
+ggsave(filename = "../Results/income_with_blackout_houston.png", plot = last_plot())
 
 ```
 
@@ -266,8 +264,9 @@ ggplot(data = blackout_noblackout_houston, aes(y = B19013e1)) +
   geom_boxplot() + 
   labs(title = 'Median income of Blackout residents', y = 'Median Income',) + 
   theme_minimal() 
+ggsave(filename = "../Results/median_income_blackout_boxplot.png", plot = last_plot())
 
 
 ```
 
-As shown in the map above, we can see that neighborhoods of higher median incomes is not necessarily suggestive of whether a building had a blackout or not. The white points in the map represent buildings that had a blackout. Often times, these buildings seem to be in tracts where the median income is betweeen \$100,000 and \$200,000. This study did not consider the fact that there may be more homes in lower income census tracts than higher income census tracts, and therefor we cannot make accurate findings from points on a map. The boxplot shows us that the average median income for a houses that did experience a blackout is around \$70,000. Based on the map, I would guess that the average median income for houses that did not experience a blackout is lower than \$70,000.
+As shown in the map above, we can see that neighborhoods of higher median incomes is not necessarily suggestive of whether a building had a blackout or not. The white points in the map represent buildings that had a blackout. Often times, these buildings seem to be in tracts where the median income is betweeen $\$100,000$ and $\$200,000$. This study did not consider the fact that there may be more homes in lower income census tracts than higher income census tracts, and therefor we cannot make accurate findings from points on a map. The boxplot shows us that the average median income for a houses that did experience a blackout is around $\$70,000$. Based on the map, I would guess that the average median income for houses that did not experience a blackout is lower than $\$70,000$.
