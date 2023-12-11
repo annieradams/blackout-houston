@@ -5,4 +5,5 @@ In February 2021, the state of Texas went dark when winter storms left millions 
 More background information on these stroms and datasets used can be found in the R markdown script that carries out this analysis.
 
 Where is the data?
+
 Due to the size of the data, data will not be stored in this repo. The data will instead be stored locally and included in the gitignore.
