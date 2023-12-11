@@ -1,7 +1,7 @@
 ---
-title: 'EDS 223: assignment 3'
+title: 'Finding Blackouts after Texas Winter Storm'
 author: "Annie Adams"
-date: "2022-10-26"
+date: " Dec 10, 2023"
 output:
     html_document:
       print_df: paged
@@ -18,13 +18,15 @@ output:
 
 ## Overview
 
-We will utilize a few different datasets to attempt to determine just how many buildings lost power in this storm. To classify the number of houses, we are going to use satelitte data from before/ during the outage. We will focus specifically on Houston. We will first estimate the number of homes in Houston that lst power due to the storm, and then will explore if socioeconomic factors are predictors of communities recovery from a power outage.
+We will utilize a few different datasets to attempt to determine just how many buildings lost power in this storm. To classify the number of houses, we are going to use satelitte data from before/ during the outage. We will focus specifically on Houston. We will first estimate the number of homes in Houston that lost power due to the storm, and then will explore if socioeconomic factors are predictors of communities recovery from a power outage.
 
 ## Data
 
 #### Night lights data
 
-We will sse NASA's Worldview to explore the data around the day of the storm. There are several days with too much cloud cover to be useful, but 2021-02-07 and 2021-02-16 provide two clear, contrasting images to visualize the extent of the power outage in Texas.We will utilize VIIRS data, which is distributed through NASA's [Level-1 and Atmospheric Archive & Distribution System Distributed Active Archive Center (LAADS DAAC)](https://ladsweb.modaps.eosdis.nasa.gov/). Many NASA Earth data products are distributed in 10x10 degree tiles in sinusoidal equal-area projection. Tiles are identified by their horizontal and vertical position in the grid. Houston lies on the border of tiles h08v05 and h08v06. We therefore need to download two tiles per date. We will utilize datasets that were previously prepped and cleaned, however, we will still need to join the two tiles that cover Houston. - `VNP46A1.A2021038.h08v05.001.2021039064328.h5.tif`: tile h08v05, collected on 2021-02-07\
+We will sse NASA's Worldview to explore the data around the day of the storm. There are several days with too much cloud cover to be useful, but 2021-02-07 and 2021-02-16 provide two clear, contrasting images to visualize the extent of the power outage in Texas.We will utilize VIIRS data, which is distributed through NASA's [Level-1 and Atmospheric Archive & Distribution System Distributed Active Archive Center (LAADS DAAC)](https://ladsweb.modaps.eosdis.nasa.gov/). Many NASA Earth data products are distributed in 10x10 degree tiles in sinusoidal equal-area projection. Tiles are identified by their horizontal and vertical position in the grid. Houston lies on the border of tiles h08v05 and h08v06. We therefore need to download two tiles per date. We will utilize datasets that were previously prepped and cleaned, however, we will still need to join the two tiles that cover Houston. 
+
+- `VNP46A1.A2021038.h08v05.001.2021039064328.h5.tif`: tile h08v05, collected on 2021-02-07\
 - `VNP46A1.A2021038.h08v06.001.2021039064329.h5.tif`: tile h08v06, collected on 2021-02-07\
 - `VNP46A1.A2021047.h08v05.001.2021048091106.h5.tif`: tile h08v05, collected on 2021-02-16\
 - `VNP46A1.A2021047.h08v06.001.2021048091105.h5.tif`: tile h08v06, collected on 2021-02-16
@@ -39,11 +41,15 @@ To prevent misrepresenting roads as building lights, we will utilize this road d
 #### House data
 
 We can also obtain building data from OpenStreetMap to quantiy where the houses in Houston are. We again will be using a preloaded package containing only houses in the Houston metropolitan area,with data coming from Geofabrick. 
+
 - `gis_osm_buildings_a_free_1.gpkg`
 
 #### Socioeconomic data
 
 We cannot readily get socioeconomic information for every home, so instead we obtained data from the [U.S. Census Bureau's American Community Survey](https://www.census.gov/programs-surveys/acs) for census tracts in 2019. The *folder* `ACS_2019_5YR_TRACT_48.gdb` is an ArcGIS ["file geodatabase"](https://desktop.arcgis.com/en/arcmap/latest/manage-data/administer-file-gdbs/file-geodatabases.htm), a multi-file proprietary format that's roughly analogous to a GeoPackage file. Each layer of the geodatabase contains a subset of the fields documents in the [ACS metadata](https://www2.census.gov/geo/docs/maps-data/data/tiger/prejoined/ACSMetadata2011.txt). The geodatabase contains a layer holding the geometry information, separate from the layers holding the ACS attributes.Looking ahead, we will need to combine the geometry with the attributes to get a feature layer that `sf` can use.
+
+
+## Analysis
 
 ### Load necessary packages and data
 
@@ -58,7 +64,7 @@ library(ggspatial)
 library(tmap)
 ```
 
-```{r}
+```{r echo = TRUE, results= 'hide'}
 #load night light data
 h08v05_07 <- read_stars("../data/VNP46A1/VNP46A1.A2021038.h08v05.001.2021039064328.tif") # load in data using stars
 h08v06_07 <- read_stars("../data/VNP46A1/VNP46A1.A2021038.h08v06.001.2021039064329.tif")
@@ -108,12 +114,12 @@ In order to visualize the difference in lights before and after the storm , we n
 blackout_vec <- st_as_sf(blackout) %>% st_make_valid() #make blackout mask a vector and fix invalid geometries
 ```
 
-```{r}
+```{r results= 'hide'}
 st_crs(blackout_vec) # check crs of blackout_vec to know which crs to assign to houston metro area
 
 ```
 
-```{r include=TRUE}
+```{r include=TRUE, message=FALSE, warning=FALSE}
 
 
 houston_metro_area <- st_as_sfc(st_bbox(c(xmin = -96.5, ymin = 29, xmax = -94.5, ymax =30.5 ), crs = 4326)) # create bounding box and assign crs 4326
@@ -124,7 +130,7 @@ blackout_houston_3083 <- st_transform(blackout_houston, "EPSG: 3083") # change c
 
 tmap_mode("plot") 
 map = tm_shape(blackout_houston_3083) + tm_polygons() + tm_layout(title = "Blackout areas in Houston") # plot blackout map 
-object.size(map)
+#object.size(map)
 map
 
 
@@ -189,7 +195,7 @@ print(paste0(numb_of_houses, " houses experienced a blackout."))
 
 We will now use the `acs` data to see if there is any relationship between blackout areas and different socioecnomic factors. Specifically, we will look to see if the outages were at all related to the median income. In the `acs` data, the median income field is stored in the `ACS_2019_5YR_TRACT_48_TEXAS` layer and denoted by `B19013e1`. 
 
-```{r include=TRUE}
+```{r echo=TRUE,results='hide', warning= FALSE, message=FALSE}
 
 acs_geoms <- st_transform(acs_geoms, crs = "EPSG:3038") # transform crs to 3083
 acs_income <- st_read("../data/ACS_2019_5YR_TRACT_48_TEXAS.gdb", layer = "X19_INCOME") # read in income layer
@@ -219,8 +225,6 @@ houston_3083 <- st_transform(houston_metro_area_st, crs = "EPSG: 3083") # change
 acs_houston <- acs[houston_3083,] #select acs census data in houston
 
 
-#buildings_acs_houston <-  st_join(buildings, acs) # join bulding and acs data
-#buildings_blackedout_houston <- buildings_acs_houston[highway_mask , op = st_intersects]# include building data into acs census incom data
 
 
 ```
@@ -229,7 +233,7 @@ acs_houston <- acs[houston_3083,] #select acs census data in houston
 
 Now that we are looking at data within Houston, we can create a map of the median income by census tract. Doing so will also us to visually see if there is a relationship between income and blackout outage experience. We will create a map that shows the median incomes for different census tracts in Houston, and then plot the outage areas on top of this map.
 
-```{r}
+```{r message=FALSE}
 
 ggplot()+
   geom_sf(data =  acs_houston, aes(fill = B19013e1))+ # add census income data for houston
@@ -251,7 +255,7 @@ ggsave(filename = "../Results/income_with_blackout_houston.png", plot = last_plo
 
 
  We looked at a map of income disparities across census tacts, but lets now look at some more concrete numbers. We will create a boxplot to see the specific median income for areas that experienced a blackout. 
-```{r}
+```{r warning=FALSE, message=FALSE}
 
 #combine blackout vector (which has both blackout and non blackout) with acs houston data 
 
