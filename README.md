@@ -4,6 +4,21 @@ In February 2021, the state of Texas went dark when winter storms left millions 
 
 More background information on these stroms and datasets used can be found in the R markdown script that carries out this analysis.
 
+
+```
+.
+├── Scripts/                    
+|  └── houston-outage.Rmd     
+|  └── houston-outage.html
+├── Results/                    
+|  └── blackout_vector_houston.png    
+|  └── income_with_blackout_houston.png
+   └── median_income_blackout_boxplot.png 
+├── README.md
+├── .gitignore
+└── blackout-houston.Rproj
+```
+
 Where is the data?
 
 Due to the size of the data, data will not be stored in this repo. The data will instead be stored locally and included in the gitignore.
